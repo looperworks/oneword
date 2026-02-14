@@ -16,20 +16,36 @@
 }
 html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--accent);overflow:hidden}
 
-/* -- Screens -- */
-.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.4s}
+/* ── Screens ── */
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.5s}
 .screen.active{opacity:1;pointer-events:auto}
 
-/* -- Question layout -- */
+/* ── Question layout ── */
 .q-row{display:flex;width:100%;height:100%}
-.q-half{flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.15s}
-.q-half:hover{opacity:0.7}
-.q-half:active{opacity:0.5}
-.q-word{font-size:clamp(42px,8vw,110px);font-weight:900;letter-spacing:-0.02em;user-select:none}
+.q-half{flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+.q-half:hover{background:rgba(107,124,94,0.04)}
+.q-half:active{background:rgba(107,124,94,0.08)}
+.q-word{font-size:clamp(42px,8vw,110px);font-weight:900;letter-spacing:-0.02em;user-select:none;transition:all 0.4s cubic-bezier(.4,0,.2,1)}
 .q-word-solid{color:var(--accent)}
-.q-word-outline{color:transparent;-webkit-text-stroke:2px var(--accent)}
+/* FIX: outline text using paint-order to prevent inner line artifacts */
+.q-word-outline{
+  color:transparent;
+  -webkit-text-stroke:2px var(--accent);
+  paint-order:stroke fill;
+}
 
-/* -- Compression screen -- */
+/* Imprint animation: chosen word stamps down */
+.q-half.chosen{background:var(--accent);transition:background 0.35s}
+.q-half.chosen .q-word{color:var(--bg)!important;-webkit-text-stroke-color:var(--bg)!important;transform:scale(0.92);transition:all 0.25s cubic-bezier(.4,0,.2,1)}
+.q-half.unchosen{opacity:0.15;transition:opacity 0.35s}
+
+/* Divider line between choices */
+.q-divider{position:absolute;left:50%;top:15%;height:70%;width:1px;background:var(--accent);opacity:0.1;pointer-events:none;z-index:1}
+
+/* Round indicator */
+.q-round{position:fixed;top:32px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);opacity:0.2;z-index:10;transition:opacity 0.4s}
+
+/* ── Compression screen ── */
 .compress-wrap{text-align:center;position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 .compress-word{position:absolute;font-weight:900;font-size:clamp(18px,3.5vw,32px);color:var(--accent);opacity:0;transition:all 1.2s cubic-bezier(.4,0,.2,1);letter-spacing:-0.01em}
 .compress-word.scattered{opacity:0.5}
@@ -38,16 +54,26 @@ html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;
 .compress-result{font-weight:900;font-size:clamp(44px,8vw,100px);color:var(--accent);opacity:0;transform:scale(0.6);transition:all 0.8s cubic-bezier(.4,0,.2,1)}
 .compress-result.visible{opacity:1;transform:scale(1)}
 
-/* -- Result -- */
-.result-inner{text-align:center;max-width:640px;padding:0 40px}
-.result-text{color:var(--accent);font-weight:900;font-size:clamp(36px,7vw,90px);line-height:1.2}
-.result-desc{font-size:clamp(14px,1.8vw,18px);font-weight:400;line-height:1.7;margin-top:24px;color:var(--accent);opacity:0.6}
+/* ── Result ── */
+.result-inner{text-align:center;max-width:640px;padding:0 40px;margin-top:-20px}
+.result-label{font-size:clamp(10px,1.2vw,13px);font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);opacity:0;margin-bottom:8px;min-height:1.2em;transition:opacity 0.5s}
+.result-label.visible{opacity:0.35}
+.result-label .cursor{display:inline-block;width:2px;height:0.85em;background:var(--accent);opacity:0.4;margin-left:1px;animation:blink 0.7s step-end infinite;vertical-align:baseline;position:relative;top:0.08em}
+.result-word{color:var(--accent);font-weight:900;font-size:clamp(48px,9vw,120px);line-height:1.1;letter-spacing:-0.02em;min-height:1.2em;opacity:0;transition:opacity 0.3s}
+.result-word.visible{opacity:1}
+/* Typing cursor blink */
+.result-word .cursor{display:inline-block;width:3px;height:0.85em;background:var(--accent);opacity:0.6;margin-left:2px;animation:blink 0.7s step-end infinite;vertical-align:baseline;position:relative;top:0.05em}
+@keyframes blink{0%,100%{opacity:0.6}50%{opacity:0}}
+.result-desc{font-size:clamp(14px,1.8vw,18px);font-weight:400;line-height:1.7;margin-top:24px;color:var(--accent);opacity:0;transition:opacity 0.8s}
+.result-desc.visible{opacity:0.6}
 
-/* -- Reflective prompt (#3) -- */
-.result-reflect{margin-top:32px;font-size:clamp(12px,1.4vw,15px);font-weight:400;font-style:italic;color:var(--accent);opacity:0.35;line-height:1.6}
+/* ── Reflective prompt (#3) ── */
+.result-reflect{margin-top:32px;font-size:clamp(12px,1.4vw,15px);font-weight:400;font-style:italic;color:var(--accent);opacity:0;transition:opacity 0.8s;line-height:1.6}
+.result-reflect.visible{opacity:0.35}
 
-/* -- Dimension reveal (#4) -- */
-.result-dims{margin-top:28px;cursor:pointer;user-select:none}
+/* ── Dimension reveal (#4) ── */
+.result-dims{margin-top:28px;cursor:pointer;user-select:none;opacity:0;transition:opacity 0.6s}
+.result-dims.visible{opacity:1}
 .dims-toggle{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);opacity:0.3;transition:opacity 0.2s}
 .dims-toggle:hover{opacity:0.55}
 .dims-detail{max-height:0;overflow:hidden;transition:max-height 0.5s cubic-bezier(.4,0,.2,1);opacity:0;transition:max-height 0.5s, opacity 0.4s}
@@ -57,25 +83,26 @@ html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;
 .dims-label{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);opacity:0.3}
 .dims-value{font-size:clamp(13px,1.6vw,16px);font-weight:700;color:var(--accent);opacity:0.6;margin-top:2px}
 
-/* -- Evolution tracker (#5) -- */
+/* ── Evolution tracker (#5) ── */
 .result-evolution{margin-top:20px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);opacity:0.25;display:none}
 
-/* -- Share + Play buttons -- */
-.result-actions{margin-top:36px;display:flex;justify-content:center;gap:28px;align-items:center}
+/* ── Share + Play buttons ── */
+.result-actions{margin-top:36px;display:flex;justify-content:center;gap:28px;align-items:center;opacity:0;transition:opacity 0.6s}
+.result-actions.visible{opacity:1}
 .result-btn{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);opacity:0.35;cursor:pointer;transition:opacity 0.2s}
 .result-btn:hover{opacity:0.7}
 
-/* -- Share card (#2) -- */
+/* ── Share card (#2) ── */
 .share-toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg);padding:10px 24px;border-radius:100px;font-size:12px;font-weight:700;letter-spacing:0.08em;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:20}
 .share-toast.visible{opacity:1}
 
-/* -- Marquee -- */
+/* ── Marquee ── */
 .marquee-wrap{position:fixed;bottom:0;left:0;right:0;height:30px;overflow:hidden;z-index:5}
 .marquee-track{display:flex;align-items:center;height:100%;animation:marquee 25s linear infinite;white-space:nowrap}
 .marquee-track span{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:0 40px;color:var(--accent)}
 @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-/* -- Mobile -- */
+/* ── Mobile ── */
 @media(max-width:700px){
   .q-row{flex-direction:column}
   .q-word{font-size:clamp(32px,12vw,60px)}
@@ -85,7 +112,7 @@ html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;
 </head>
 <body>
 
-<!-- SCREEN: Q1-Q6 -->
+<!-- ▸ SCREEN: Q1–Q6 -->
 <div class="screen active" id="screen-q1"></div>
 <div class="screen" id="screen-q2"></div>
 <div class="screen" id="screen-q3"></div>
@@ -93,17 +120,21 @@ html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;
 <div class="screen" id="screen-q5"></div>
 <div class="screen" id="screen-q6"></div>
 
-<!-- SCREEN: COMPRESSION (#1) -->
+<!-- Round indicator -->
+<div class="q-round" id="q-round">1 / 6</div>
+
+<!-- ▸ SCREEN: COMPRESSION (#1) -->
 <div class="screen" id="screen-compress">
   <div class="compress-wrap" id="compress-wrap">
     <div class="compress-result" id="compress-result"></div>
   </div>
 </div>
 
-<!-- SCREEN: RESULT -->
+<!-- ▸ SCREEN: RESULT -->
 <div class="screen" id="screen-result">
   <div class="result-inner">
-    <div class="result-text" id="result-text"></div>
+    <div class="result-label" id="result-label"></div>
+    <div class="result-word" id="result-word"></div>
     <div class="result-desc" id="result-desc"></div>
     <div class="result-reflect" id="result-reflect">Does this feel right? What voice is missing from this word?</div>
     <div class="result-dims" id="result-dims" onclick="toggleDims()">
@@ -113,7 +144,7 @@ html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;
       </div>
     </div>
     <div class="result-evolution" id="result-evolution"></div>
-    <div class="result-actions">
+    <div class="result-actions" id="result-actions">
       <div class="result-btn" onclick="shareCard()">SHARE</div>
       <div class="result-btn" onclick="resetGame()">PLAY AGAIN</div>
     </div>
@@ -126,10 +157,11 @@ html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;
 <!-- Hidden canvas for share card -->
 <canvas id="share-canvas" style="display:none"></canvas>
 
-<!-- MARQUEE -->
+<!-- ▸ MARQUEE -->
 <div class="marquee-wrap">
   <div class="marquee-track" id="marquee-track"></div>
 </div>
+
 <script>
 const questions = [
   { left:'BUILD',     right:'DISCOVER',  dim:'VALUES'    },
@@ -172,7 +204,8 @@ const resultMap = {
   'BUILD-SUPPORT-ANALYZE-BREADTH-SPEAK-STRUCTURE': { word:'ORGANIZER', desc:'You see the whole picture and make it work. Your analytical range and supportive communication style turn groups into teams.' },
   'BUILD-SUPPORT-ANALYZE-BREADTH-SPEAK-FLOW': { word:'CONNECTOR', desc:'You bring people and ideas together. Your broad understanding and warm communication style create bonds that produce results.' },
   'BUILD-SUPPORT-ANALYZE-BREADTH-LISTEN-STRUCTURE': { word:'STEWARD', desc:'You take care of systems so they take care of people. Your wide analytical lens and quiet dedication keep the important things running.' },
-  'BUILD-SUPPORT-ANALYZE-BREADTH-LISTEN-FLOW': { word:'NAVIGATOR', desc:'You help people find their way. Your broad awareness and patient listening make you the one who sees the path through complexity.' },  'DISCOVER-LEAD-CREATE-DEPTH-SPEAK-STRUCTURE': { word:'INVENTOR', desc:'You discover what is missing and build what is needed. Your deep creative focus and structural leadership produce breakthroughs.' },
+  'BUILD-SUPPORT-ANALYZE-BREADTH-LISTEN-FLOW': { word:'NAVIGATOR', desc:'You help people find their way. Your broad awareness and patient listening make you the one who sees the path through complexity.' },
+  'DISCOVER-LEAD-CREATE-DEPTH-SPEAK-STRUCTURE': { word:'INVENTOR', desc:'You discover what is missing and build what is needed. Your deep creative focus and structural leadership produce breakthroughs.' },
   'DISCOVER-LEAD-CREATE-DEPTH-SPEAK-FLOW': { word:'MUSE', desc:'You inspire by exploring out loud. Your deep creative curiosity and expressive presence give others permission to imagine.' },
   'DISCOVER-LEAD-CREATE-DEPTH-LISTEN-STRUCTURE': { word:'RESEARCHER', desc:'You discover through making. Your deep creative process is disciplined and revelatory, uncovering truth through careful construction.' },
   'DISCOVER-LEAD-CREATE-DEPTH-LISTEN-FLOW': { word:'MYSTIC', desc:'You see connections others cannot. Your deep creative intuition and quiet leadership produce insights that feel like revelation.' },
@@ -208,21 +241,22 @@ const resultMap = {
 
 let choices = [];
 let currentRound = 0;
-let wordHistory = JSON.parse(localStorage.getItem('oneword-history') || '[]'); // #5 evolution
+let wordHistory = JSON.parse(localStorage.getItem('oneword-history') || '[]');
 
 // Build question screens
 function buildQuestions() {
   questions.forEach((q, i) => {
     const el = document.getElementById('screen-q' + (i + 1));
     const leftSolid = Math.random() > 0.5;
-    el.innerHTML = '<div class="q-row">' +
-      '<div class="q-half" onclick="choose(\'' + q.left + '\',' + i + ')">' +
-        '<span class="q-word ' + (leftSolid ? 'q-word-solid' : 'q-word-outline') + '">' + q.left + '</span>' +
-      '</div>' +
-      '<div class="q-half" onclick="choose(\'' + q.right + '\',' + i + ')">' +
-        '<span class="q-word ' + (leftSolid ? 'q-word-outline' : 'q-word-solid') + '">' + q.right + '</span>' +
-      '</div>' +
-    '</div>';
+    el.innerHTML = `<div class="q-row">
+      <div class="q-half" id="q${i}-left" onclick="choose('${q.left}',${i},'left')">
+        <span class="q-word ${leftSolid ? 'q-word-solid' : 'q-word-outline'}">${q.left}</span>
+      </div>
+      <div class="q-divider"></div>
+      <div class="q-half" id="q${i}-right" onclick="choose('${q.right}',${i},'right')">
+        <span class="q-word ${leftSolid ? 'q-word-outline' : 'q-word-solid'}">${q.right}</span>
+      </div>
+    </div>`;
   });
 }
 
@@ -231,27 +265,43 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
 }
 
-function choose(word, round) {
+function choose(word, round, side) {
+  // Imprint animation: stamp the chosen side
+  const leftEl = document.getElementById('q' + round + '-left');
+  const rightEl = document.getElementById('q' + round + '-right');
+  const chosen = side === 'left' ? leftEl : rightEl;
+  const unchosen = side === 'left' ? rightEl : leftEl;
+
+  chosen.classList.add('chosen');
+  unchosen.classList.add('unchosen');
+
+  // Update round indicator
+  const roundEl = document.getElementById('q-round');
+
   choices.push(word);
   currentRound = round + 1;
-  if (currentRound < 6) {
-    showScreen('screen-q' + (currentRound + 1));
-  } else {
-    showCompression(); // #1: go to compression first
-  }
+
+  // Delay transition to let imprint animate
+  setTimeout(() => {
+    if (currentRound < 6) {
+      roundEl.textContent = (currentRound + 1) + ' / 6';
+      showScreen('screen-q' + (currentRound + 1));
+    } else {
+      roundEl.style.opacity = '0';
+      showCompression();
+    }
+  }, 450);
 }
 
-// -- #1: Compression Animation --
+// ── #1: Compression Animation ──
 function showCompression() {
   const key = choices.join('-');
   const r = resultMap[key] || { word:'SEEKER', desc:'You are on a path of discovery.' };
   const wrap = document.getElementById('compress-wrap');
   const resultEl = document.getElementById('compress-result');
 
-  // Clear previous
   wrap.querySelectorAll('.compress-word').forEach(el => el.remove());
 
-  // Create scattered choice words
   const positions = [
     { x: -35, y: -30 }, { x: 30, y: -25 },
     { x: -25, y: 0 },   { x: 35, y: 5 },
@@ -261,9 +311,7 @@ function showCompression() {
     const el = document.createElement('div');
     el.className = 'compress-word';
     el.textContent = c;
-    const px = positions[i].x;
-    const py = positions[i].y;
-    el.style.transform = 'translate(' + px + 'vw, ' + py + 'vh)';
+    el.style.transform = `translate(${positions[i].x}vw, ${positions[i].y}vh)`;
     wrap.appendChild(el);
     return el;
   });
@@ -272,12 +320,10 @@ function showCompression() {
   resultEl.classList.remove('visible');
   showScreen('screen-compress');
 
-  // Phase 1: scatter in (0ms)
   requestAnimationFrame(() => {
     wordEls.forEach(el => el.classList.add('scattered'));
   });
 
-  // Phase 2: converge to center (1200ms)
   setTimeout(() => {
     wordEls.forEach(el => {
       el.style.transform = 'translate(0, 0)';
@@ -285,42 +331,113 @@ function showCompression() {
     });
   }, 1200);
 
-  // Phase 3: reveal result word (2400ms)
   setTimeout(() => {
     resultEl.classList.add('visible');
   }, 2200);
 
-  // Phase 4: transition to result screen (3600ms)
   setTimeout(() => {
     showResult(r);
   }, 3400);
 }
 
-// -- Result Screen --
+// ── Result Screen with sequential typing animation ──
 function showResult(r) {
   if (!r) {
     const key = choices.join('-');
     r = resultMap[key] || { word:'SEEKER', desc:'You are on a path of discovery.' };
   }
 
-  document.getElementById('result-text').innerHTML = 'YOUR WORD IS<br>' + r.word;
-  document.getElementById('result-desc').textContent = r.desc;
+  const labelEl = document.getElementById('result-label');
+  const wordEl = document.getElementById('result-word');
+  const descEl = document.getElementById('result-desc');
+  const reflectEl = document.getElementById('result-reflect');
+  const dimsEl = document.getElementById('result-dims');
+  const actionsEl = document.getElementById('result-actions');
+  const roundEl = document.getElementById('q-round');
 
-  // #4: Dimension reveal
+  // Hide round counter
+  roundEl.style.opacity = '0';
+  roundEl.style.pointerEvents = 'none';
+
+  // Reset everything
+  labelEl.innerHTML = '';
+  labelEl.classList.remove('visible');
+  wordEl.innerHTML = '';
+  wordEl.classList.remove('visible');
+  descEl.textContent = r.desc;
+  descEl.classList.remove('visible');
+  reflectEl.classList.remove('visible');
+  dimsEl.classList.remove('visible');
+  actionsEl.classList.remove('visible');
+
   buildDimensions();
 
-  // #5: Evolution tracker
   wordHistory.push(r.word);
   try { localStorage.setItem('oneword-history', JSON.stringify(wordHistory)); } catch(e) {}
   updateEvolution();
 
-  // Close dims on new result
   document.getElementById('dims-detail').classList.remove('open');
-
   showScreen('screen-result');
+
+  // ── Phase 1: Type "YOUR WORD IS" ──
+  const labelText = 'YOUR WORD IS';
+  const labelLetters = labelText.split('');
+  let labelTyped = '';
+  const labelDelay = 55;
+
+  // Show label container
+  labelEl.classList.add('visible');
+  labelEl.innerHTML = '<span class="cursor"></span>';
+
+  let t = 300; // initial pause
+
+  labelLetters.forEach((ch, i) => {
+    setTimeout(() => {
+      labelTyped += ch;
+      labelEl.innerHTML = labelTyped + '<span class="cursor"></span>';
+    }, t + i * labelDelay);
+  });
+
+  // ── Phase 2: Type the keyword ──
+  const phase2Start = t + labelLetters.length * labelDelay + 400;
+
+  setTimeout(() => {
+    // Remove cursor from label
+    labelEl.textContent = labelText;
+    // Show word line
+    wordEl.classList.add('visible');
+    wordEl.innerHTML = '<span class="cursor"></span>';
+  }, phase2Start);
+
+  const wordLetters = r.word.split('');
+  let wordTyped = '';
+  const wordDelay = 80;
+
+  wordLetters.forEach((ch, i) => {
+    setTimeout(() => {
+      wordTyped += ch;
+      wordEl.innerHTML = wordTyped + '<span class="cursor"></span>';
+
+      // After last letter of keyword
+      if (i === wordLetters.length - 1) {
+        // Remove cursor, fade in rest
+        setTimeout(() => {
+          wordEl.innerHTML = wordTyped;
+          descEl.classList.add('visible');
+        }, 500);
+        setTimeout(() => {
+          reflectEl.classList.add('visible');
+        }, 1100);
+        setTimeout(() => {
+          dimsEl.classList.add('visible');
+          actionsEl.classList.add('visible');
+        }, 1600);
+      }
+    }, phase2Start + 200 + i * wordDelay);
+  });
 }
 
-// -- #4: Dimension Reveal --
+// ── #4: Dimension Reveal ──
 function buildDimensions() {
   const dims = [
     { label:'VALUES',    words: [choices[0], choices[3]] },
@@ -329,7 +446,7 @@ function buildDimensions() {
   ];
   const row = document.getElementById('dims-row');
   row.innerHTML = dims.map(d =>
-    '<div class="dims-item"><div class="dims-label">' + d.label + '</div><div class="dims-value">' + d.words.join(' + ') + '</div></div>'
+    `<div class="dims-item"><div class="dims-label">${d.label}</div><div class="dims-value">${d.words.join(' + ')}</div></div>`
   ).join('');
 }
 
@@ -337,7 +454,7 @@ function toggleDims() {
   document.getElementById('dims-detail').classList.toggle('open');
 }
 
-// -- #5: Evolution Tracker --
+// ── #5: Evolution Tracker ──
 function updateEvolution() {
   const el = document.getElementById('result-evolution');
   if (wordHistory.length > 1) {
@@ -355,7 +472,7 @@ function updateEvolution() {
   }
 }
 
-// -- #2: Share Card --
+// ── #2: Share Card ──
 function shareCard() {
   const canvas = document.getElementById('share-canvas');
   const ctx = canvas.getContext('2d');
@@ -363,26 +480,20 @@ function shareCard() {
   canvas.width = w;
   canvas.height = h;
 
-  // Background
   ctx.fillStyle = '#F4F5F0';
   ctx.fillRect(0, 0, w, h);
-
-  // Accent elements
   ctx.fillStyle = '#6B7C5E';
 
-  // "YOUR WORD IS" label
   ctx.font = '700 28px system-ui, -apple-system, sans-serif';
   ctx.letterSpacing = '4px';
   ctx.textAlign = 'center';
   ctx.fillText('YOUR WORD IS', w/2, 340);
 
-  // The word
   const key = choices.join('-');
   const r = resultMap[key] || { word:'SEEKER', desc:'' };
   ctx.font = '900 120px system-ui, -apple-system, sans-serif';
   ctx.fillText(r.word, w/2, 500);
 
-  // Description
   ctx.font = '400 26px system-ui, -apple-system, sans-serif';
   ctx.globalAlpha = 0.5;
   const words = r.desc.split(' ');
@@ -401,13 +512,11 @@ function shareCard() {
     ctx.fillText(l, w/2, 580 + i * 38);
   });
 
-  // Footer
   ctx.globalAlpha = 0.25;
   ctx.font = '700 18px system-ui, -apple-system, sans-serif';
   ctx.fillText('ONEWORD \u00B7 NARRATIVE BY DESIGN', w/2, h - 80);
   ctx.globalAlpha = 1;
 
-  // Download or share
   canvas.toBlob(blob => {
     if (navigator.share && navigator.canShare) {
       const file = new File([blob], 'oneword-' + r.word.toLowerCase() + '.png', { type: 'image/png' });
@@ -416,13 +525,11 @@ function shareCard() {
         return;
       }
     }
-    // Fallback: download
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'oneword-' + r.word.toLowerCase() + '.png';
     a.click();
     URL.revokeObjectURL(a.href);
-    // Toast
     const toast = document.getElementById('share-toast');
     toast.classList.add('visible');
     setTimeout(() => toast.classList.remove('visible'), 2000);
@@ -432,6 +539,8 @@ function shareCard() {
 function resetGame() {
   choices = [];
   currentRound = 0;
+  document.getElementById('q-round').textContent = '1 / 6';
+  document.getElementById('q-round').style.opacity = '';
   buildQuestions();
   showScreen('screen-q1');
 }
