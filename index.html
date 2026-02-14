@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneWord — What's Your One Word?</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@font-face{font-family:'Circular';src:url('CircularStd-Book.otf') format('opentype');font-weight:400}
+@font-face{font-family:'Circular';src:url('CircularStd-Medium.otf') format('opentype');font-weight:500}
+@font-face{font-family:'Circular';src:url('CircularStd-Bold.otf') format('opentype');font-weight:700}
+@font-face{font-family:'Circular';src:url('CircularStd-Black.otf') format('opentype');font-weight:900}
+:root{
+  --bg:#F4F5F0;
+  --accent:#6B7C5E;
+}
+html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--accent);overflow:hidden}
+
+/* -- Screens -- */
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.4s}
+.screen.active{opacity:1;pointer-events:auto}
+
+/* -- Question layout -- */
+.q-row{display:flex;width:100%;height:100%}
+.q-half{flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.15s}
+.q-half:hover{opacity:0.7}
+.q-half:active{opacity:0.5}
+.q-word{font-size:clamp(42px,8vw,110px);font-weight:900;letter-spacing:-0.02em;user-select:none}
+.q-word-solid{color:var(--accent)}
+.q-word-outline{color:transparent;-webkit-text-stroke:2px var(--accent)}
+
+/* -- Compression screen -- */
+.compress-wrap{text-align:center;position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.compress-word{position:absolute;font-weight:900;font-size:clamp(18px,3.5vw,32px);color:var(--accent);opacity:0;transition:all 1.2s cubic-bezier(.4,0,.2,1);letter-spacing:-0.01em}
+.compress-word.scattered{opacity:0.5}
+.compress-word.converged{opacity:0;transform:translate(0,0) scale(0.3)!important}
+.compress-arrow{position:absolute;font-weight:900;font-size:clamp(24px,4vw,40px);color:var(--accent);opacity:0;transition:opacity 0.6s}
+.compress-result{font-weight:900;font-size:clamp(44px,8vw,100px);color:var(--accent);opacity:0;transform:scale(0.6);transition:all 0.8s cubic-bezier(.4,0,.2,1)}
+.compress-result.visible{opacity:1;transform:scale(1)}
+
+/* -- Result -- */
+.result-inner{text-align:center;max-width:640px;padding:0 40px}
+.result-text{color:var(--accent);font-weight:900;font-size:clamp(36px,7vw,90px);line-height:1.2}
+.result-desc{font-size:clamp(14px,1.8vw,18px);font-weight:400;line-height:1.7;margin-top:24px;color:var(--accent);opacity:0.6}
+
+/* -- Reflective prompt (#3) -- */
+.result-reflect{margin-top:32px;font-size:clamp(12px,1.4vw,15px);font-weight:400;font-style:italic;color:var(--accent);opacity:0.35;line-height:1.6}
+
+/* -- Dimension reveal (#4) -- */
+.result-dims{margin-top:28px;cursor:pointer;user-select:none}
+.dims-toggle{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);opacity:0.3;transition:opacity 0.2s}
+.dims-toggle:hover{opacity:0.55}
+.dims-detail{max-height:0;overflow:hidden;transition:max-height 0.5s cubic-bezier(.4,0,.2,1);opacity:0;transition:max-height 0.5s, opacity 0.4s}
+.dims-detail.open{max-height:200px;opacity:1}
+.dims-row{display:flex;justify-content:center;gap:24px;margin-top:14px;flex-wrap:wrap}
+.dims-item{text-align:center}
+.dims-label{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);opacity:0.3}
+.dims-value{font-size:clamp(13px,1.6vw,16px);font-weight:700;color:var(--accent);opacity:0.6;margin-top:2px}
+
+/* -- Evolution tracker (#5) -- */
+.result-evolution{margin-top:20px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);opacity:0.25;display:none}
+
+/* -- Share + Play buttons -- */
+.result-actions{margin-top:36px;display:flex;justify-content:center;gap:28px;align-items:center}
+.result-btn{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);opacity:0.35;cursor:pointer;transition:opacity 0.2s}
+.result-btn:hover{opacity:0.7}
+
+/* -- Share card (#2) -- */
+.share-toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg);padding:10px 24px;border-radius:100px;font-size:12px;font-weight:700;letter-spacing:0.08em;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:20}
+.share-toast.visible{opacity:1}
+
+/* -- Marquee -- */
+.marquee-wrap{position:fixed;bottom:0;left:0;right:0;height:30px;overflow:hidden;z-index:5}
+.marquee-track{display:flex;align-items:center;height:100%;animation:marquee 25s linear infinite;white-space:nowrap}
+.marquee-track span{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:0 40px;color:var(--accent)}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* -- Mobile -- */
+@media(max-width:700px){
+  .q-row{flex-direction:column}
+  .q-word{font-size:clamp(32px,12vw,60px)}
+  .dims-row{gap:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- SCREEN: Q1-Q6 -->
+<div class="screen active" id="screen-q1"></div>
+<div class="screen" id="screen-q2"></div>
+<div class="screen" id="screen-q3"></div>
+<div class="screen" id="screen-q4"></div>
+<div class="screen" id="screen-q5"></div>
+<div class="screen" id="screen-q6"></div>
+
+<!-- SCREEN: COMPRESSION (#1) -->
+<div class="screen" id="screen-compress">
+  <div class="compress-wrap" id="compress-wrap">
+    <div class="compress-result" id="compress-result"></div>
+  </div>
+</div>
+
+<!-- SCREEN: RESULT -->
+<div class="screen" id="screen-result">
+  <div class="result-inner">
+    <div class="result-text" id="result-text"></div>
+    <div class="result-desc" id="result-desc"></div>
+    <div class="result-reflect" id="result-reflect">Does this feel right? What voice is missing from this word?</div>
+    <div class="result-dims" id="result-dims" onclick="toggleDims()">
+      <div class="dims-toggle">YOUR PATTERN</div>
+      <div class="dims-detail" id="dims-detail">
+        <div class="dims-row" id="dims-row"></div>
+      </div>
+    </div>
+    <div class="result-evolution" id="result-evolution"></div>
+    <div class="result-actions">
+      <div class="result-btn" onclick="shareCard()">SHARE</div>
+      <div class="result-btn" onclick="resetGame()">PLAY AGAIN</div>
+    </div>
+  </div>
+</div>
+
+<!-- Share toast -->
+<div class="share-toast" id="share-toast">Image saved</div>
+
+<!-- Hidden canvas for share card -->
+<canvas id="share-canvas" style="display:none"></canvas>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marquee-track"></div>
+</div>
+<script>
+const questions = [
+  { left:'BUILD',     right:'DISCOVER',  dim:'VALUES'    },
+  { left:'LEAD',      right:'SUPPORT',   dim:'STRENGTHS' },
+  { left:'CREATE',    right:'ANALYZE',   dim:'SKILLS'    },
+  { left:'DEPTH',     right:'BREADTH',   dim:'VALUES'    },
+  { left:'SPEAK',     right:'LISTEN',    dim:'STRENGTHS' },
+  { left:'STRUCTURE', right:'FLOW',      dim:'SKILLS'    },
+];
+
+const resultMap = {
+  'BUILD-LEAD-CREATE-DEPTH-SPEAK-STRUCTURE': { word:'ARCHITECT', desc:'You build systems with intention. You lead by making the invisible visible, designing structures that let others do their best work.' },
+  'BUILD-LEAD-CREATE-DEPTH-SPEAK-FLOW': { word:'VISIONARY', desc:'You see what does not exist yet and speak it into being. Your gift is turning abstract possibility into tangible direction.' },
+  'BUILD-LEAD-CREATE-DEPTH-LISTEN-STRUCTURE': { word:'ENGINEER', desc:'You listen deeply, then build precisely. Every structure you create reflects an understanding of what people actually need.' },
+  'BUILD-LEAD-CREATE-DEPTH-LISTEN-FLOW': { word:'CULTIVATOR', desc:'You grow things: ideas, teams, possibilities. Your leadership is quiet but generative, creating conditions for others to thrive.' },
+  'BUILD-LEAD-CREATE-BREADTH-SPEAK-STRUCTURE': { word:'DIRECTOR', desc:'You orchestrate complexity. Your range of creative vision combined with structural thinking makes you the one who turns chaos into cohesion.' },
+  'BUILD-LEAD-CREATE-BREADTH-SPEAK-FLOW': { word:'CATALYST', desc:'You ignite things. Your broad creative energy and vocal leadership spark movements, ideas, and collaborations that ripple outward.' },
+  'BUILD-LEAD-CREATE-BREADTH-LISTEN-STRUCTURE': { word:'DESIGNER', desc:'You shape the world by listening to it first. Your broad creative instincts are grounded in structure and deep attention to how things work.' },
+  'BUILD-LEAD-CREATE-BREADTH-LISTEN-FLOW': { word:'WEAVER', desc:'You connect what others miss. Your wide creative vision and patient listening let you build tapestries from threads no one else saw.' },
+  'BUILD-LEAD-ANALYZE-DEPTH-SPEAK-STRUCTURE': { word:'STRATEGIST', desc:'You see the deep game and name it clearly. Your combination of analytical depth and structural leadership makes you the person who sees three moves ahead.' },
+  'BUILD-LEAD-ANALYZE-DEPTH-SPEAK-FLOW': { word:'TRANSLATOR', desc:'You take complex ideas and make them move. Your gift is turning deep analysis into language that inspires action.' },
+  'BUILD-LEAD-ANALYZE-DEPTH-LISTEN-STRUCTURE': { word:'SCHOLAR', desc:'You build knowledge with rigor and patience. Your depth of understanding becomes the foundation others build upon.' },
+  'BUILD-LEAD-ANALYZE-DEPTH-LISTEN-FLOW': { word:'SAGE', desc:'You hold wisdom lightly. Your deep understanding flows naturally into guidance, not through authority, but through insight.' },
+  'BUILD-LEAD-ANALYZE-BREADTH-SPEAK-STRUCTURE': { word:'COMMANDER', desc:'You see the whole board and move decisively. Your analytical breadth and clear communication make you a natural leader of complex operations.' },
+  'BUILD-LEAD-ANALYZE-BREADTH-SPEAK-FLOW': { word:'PIONEER', desc:'You chart new territory by reading the landscape. Your broad analytical mind and persuasive voice open paths that did not exist before.' },
+  'BUILD-LEAD-ANALYZE-BREADTH-LISTEN-STRUCTURE': { word:'CURATOR', desc:'You organize the world so others can find meaning. Your analytical breadth and structural instincts turn noise into navigable collections.' },
+  'BUILD-LEAD-ANALYZE-BREADTH-LISTEN-FLOW': { word:'SYNTHESIZER', desc:'You pull from everywhere and make it whole. Your gift is absorbing complexity across domains and producing clarity.' },
+  'BUILD-SUPPORT-CREATE-DEPTH-SPEAK-STRUCTURE': { word:'CRAFTSPERSON', desc:'You make things that last. Your deep creative discipline and clear voice produce work that speaks for itself.' },
+  'BUILD-SUPPORT-CREATE-DEPTH-SPEAK-FLOW': { word:'STORYTELLER', desc:'You give form to what people feel but cannot say. Your deep creative instincts and expressive flow make the invisible visible.' },
+  'BUILD-SUPPORT-CREATE-DEPTH-LISTEN-STRUCTURE': { word:'ARTISAN', desc:'You create with care and precision. Your work is quiet, deep, and built to hold, shaped by listening to both material and people.' },
+  'BUILD-SUPPORT-CREATE-DEPTH-LISTEN-FLOW': { word:'NURTURER', desc:'You grow things with patience and presence. Your creativity flows from deep listening and a care for what emerges.' },
+  'BUILD-SUPPORT-CREATE-BREADTH-SPEAK-STRUCTURE': { word:'PRODUCER', desc:'You make things happen across every dimension. Your wide creative range and structural instincts turn ideas into finished realities.' },
+  'BUILD-SUPPORT-CREATE-BREADTH-SPEAK-FLOW': { word:'SPARK', desc:'You light up rooms and projects. Your broad creative energy and expressive warmth make you the person who gets things started.' },
+  'BUILD-SUPPORT-CREATE-BREADTH-LISTEN-STRUCTURE': { word:'BUILDER', desc:'You construct from the ground up, brick by brick. Your wide creative awareness and patient listening produce work that endures.' },
+  'BUILD-SUPPORT-CREATE-BREADTH-LISTEN-FLOW': { word:'GARDENER', desc:'You plant seeds everywhere and trust the process. Your broad creative instincts and patient presence create abundance naturally.' },
+  'BUILD-SUPPORT-ANALYZE-DEPTH-SPEAK-STRUCTURE': { word:'ADVISOR', desc:'You study deeply and share wisely. People trust your analysis because it comes from understanding, not performance.' },
+  'BUILD-SUPPORT-ANALYZE-DEPTH-SPEAK-FLOW': { word:'MENTOR', desc:'You see potential in people and help them name it. Your deep insight flows naturally into guidance that changes trajectories.' },
+  'BUILD-SUPPORT-ANALYZE-DEPTH-LISTEN-STRUCTURE': { word:'ANCHOR', desc:'You hold steady when everything moves. Your quiet depth and structural mind make you the person everyone counts on.' },
+  'BUILD-SUPPORT-ANALYZE-DEPTH-LISTEN-FLOW': { word:'GUARDIAN', desc:'You protect what matters through understanding. Your deep, patient analysis serves the people and things you care about.' },
+  'BUILD-SUPPORT-ANALYZE-BREADTH-SPEAK-STRUCTURE': { word:'ORGANIZER', desc:'You see the whole picture and make it work. Your analytical range and supportive communication style turn groups into teams.' },
+  'BUILD-SUPPORT-ANALYZE-BREADTH-SPEAK-FLOW': { word:'CONNECTOR', desc:'You bring people and ideas together. Your broad understanding and warm communication style create bonds that produce results.' },
+  'BUILD-SUPPORT-ANALYZE-BREADTH-LISTEN-STRUCTURE': { word:'STEWARD', desc:'You take care of systems so they take care of people. Your wide analytical lens and quiet dedication keep the important things running.' },
+  'BUILD-SUPPORT-ANALYZE-BREADTH-LISTEN-FLOW': { word:'NAVIGATOR', desc:'You help people find their way. Your broad awareness and patient listening make you the one who sees the path through complexity.' },  'DISCOVER-LEAD-CREATE-DEPTH-SPEAK-STRUCTURE': { word:'INVENTOR', desc:'You discover what is missing and build what is needed. Your deep creative focus and structural leadership produce breakthroughs.' },
+  'DISCOVER-LEAD-CREATE-DEPTH-SPEAK-FLOW': { word:'MUSE', desc:'You inspire by exploring out loud. Your deep creative curiosity and expressive presence give others permission to imagine.' },
+  'DISCOVER-LEAD-CREATE-DEPTH-LISTEN-STRUCTURE': { word:'RESEARCHER', desc:'You discover through making. Your deep creative process is disciplined and revelatory, uncovering truth through careful construction.' },
+  'DISCOVER-LEAD-CREATE-DEPTH-LISTEN-FLOW': { word:'MYSTIC', desc:'You see connections others cannot. Your deep creative intuition and quiet leadership produce insights that feel like revelation.' },
+  'DISCOVER-LEAD-CREATE-BREADTH-SPEAK-STRUCTURE': { word:'IMPRESARIO', desc:'You curate experiences that open minds. Your wide creative vision and organizational instincts turn discovery into shared stories.' },
+  'DISCOVER-LEAD-CREATE-BREADTH-SPEAK-FLOW': { word:'EXPLORER', desc:'You go first and tell the story. Your wide creative range and expressive energy make discovery contagious.' },
+  'DISCOVER-LEAD-CREATE-BREADTH-LISTEN-STRUCTURE': { word:'MAPPER', desc:'You chart territories no one has named. Your wide creative instincts and careful listening create frameworks for the uncharted.' },
+  'DISCOVER-LEAD-CREATE-BREADTH-LISTEN-FLOW': { word:'ALCHEMIST', desc:'You transform the ordinary into the extraordinary. Your wide-ranging curiosity and intuitive creativity produce unexpected magic.' },
+  'DISCOVER-LEAD-ANALYZE-DEPTH-SPEAK-STRUCTURE': { word:'THEORIST', desc:'You see the deep structure of things and name it. Your analytical leadership turns discovery into frameworks others can use.' },
+  'DISCOVER-LEAD-ANALYZE-DEPTH-SPEAK-FLOW': { word:'PHILOSOPHER', desc:'You question everything beautifully. Your deep analytical mind and eloquent voice make the biggest questions feel approachable.' },
+  'DISCOVER-LEAD-ANALYZE-DEPTH-LISTEN-STRUCTURE': { word:'DETECTIVE', desc:'You find what is hidden. Your deep analytical mind and careful attention to signals uncover truths that change the picture.' },
+  'DISCOVER-LEAD-ANALYZE-DEPTH-LISTEN-FLOW': { word:'ORACLE', desc:'You sense what is coming. Your deep analytical intuition and quiet leadership make you the one people turn to when the path is unclear.' },
+  'DISCOVER-LEAD-ANALYZE-BREADTH-SPEAK-STRUCTURE': { word:'FUTURIST', desc:'You see patterns across systems and name what is next. Your broad analytical lens and clear voice make you a leader of change.' },
+  'DISCOVER-LEAD-ANALYZE-BREADTH-SPEAK-FLOW': { word:'CARTOGRAPHER', desc:'You map the unknown and make it navigable. Your broad analytical mind and expressive leadership turn ambiguity into direction.' },
+  'DISCOVER-LEAD-ANALYZE-BREADTH-LISTEN-STRUCTURE': { word:'PATHFINDER', desc:'You find routes through complexity. Your broad analytical awareness and patient observation reveal paths no one else can see.' },
+  'DISCOVER-LEAD-ANALYZE-BREADTH-LISTEN-FLOW': { word:'INTERPRETER', desc:'You make the unfamiliar make sense. Your broad analytical mind and deep listening translate complexity into understanding.' },
+  'DISCOVER-SUPPORT-CREATE-DEPTH-SPEAK-STRUCTURE': { word:'POET', desc:'You discover beauty in structure. Your deep creative eye and clear voice turn observations into art that reveals truth.' },
+  'DISCOVER-SUPPORT-CREATE-DEPTH-SPEAK-FLOW': { word:'KEEPER', desc:'You hold space for what others overlook. Your deep creative sensitivity and expressive warmth preserve what matters.' },
+  'DISCOVER-SUPPORT-CREATE-DEPTH-LISTEN-STRUCTURE': { word:'HEALER', desc:'You mend through making. Your deep creative care and structural patience create spaces where broken things become whole.' },
+  'DISCOVER-SUPPORT-CREATE-DEPTH-LISTEN-FLOW': { word:'DOCENT', desc:'You reveal the extraordinary in the everyday. Your deep creative listening and gentle presence help others see what was always there.' },
+  'DISCOVER-SUPPORT-CREATE-BREADTH-SPEAK-STRUCTURE': { word:'WANDERER', desc:'You find meaning by going where curiosity leads. Your wide creative awareness and expressive nature turn journeys into shared wisdom.' },
+  'DISCOVER-SUPPORT-CREATE-BREADTH-SPEAK-FLOW': { word:'ARCHIVIST', desc:'You collect and care for what matters. Your broad creative instincts and supportive nature make you the keeper of collective memory.' },
+  'DISCOVER-SUPPORT-CREATE-BREADTH-LISTEN-STRUCTURE': { word:'COMPANION', desc:'You walk alongside. Your wide creative awareness and quiet presence make you the person others want on every journey.' },
+  'DISCOVER-SUPPORT-CREATE-BREADTH-LISTEN-FLOW': { word:'GUIDE', desc:'You help others find their own way. Your wide creative intuition and deep listening open doors without pushing anyone through.' },
+  'DISCOVER-SUPPORT-ANALYZE-DEPTH-SPEAK-STRUCTURE': { word:'WITNESS', desc:'You see clearly and name what you see. Your deep analytical eye and honest voice make you someone others trust with their truth.' },
+  'DISCOVER-SUPPORT-ANALYZE-DEPTH-SPEAK-FLOW': { word:'SENTINEL', desc:'You stand watch. Your deep analytical mind and warm voice protect what matters by naming what others miss.' },
+  'DISCOVER-SUPPORT-ANALYZE-DEPTH-LISTEN-STRUCTURE': { word:'LISTENER', desc:'You hear what is not said. Your deep analytical patience and structural mind make you the person who truly understands.' },
+  'DISCOVER-SUPPORT-ANALYZE-DEPTH-LISTEN-FLOW': { word:'LIBRARIAN', desc:'You organize knowledge with love. Your deep analytical mind and patient presence make wisdom accessible to everyone.' },
+  'DISCOVER-SUPPORT-ANALYZE-BREADTH-SPEAK-STRUCTURE': { word:'BRIDGE', desc:'You connect worlds that do not know each other exist. Your broad analytical mind and clear communication span divides.' },
+  'DISCOVER-SUPPORT-ANALYZE-BREADTH-SPEAK-FLOW': { word:'OBSERVER', desc:'You notice everything and share what matters. Your broad analytical awareness and gentle voice surface insights others overlook.' },
+  'DISCOVER-SUPPORT-ANALYZE-BREADTH-LISTEN-STRUCTURE': { word:'COMPASS', desc:'You orient others without commanding. Your wide analytical perspective and quiet dedication make you the steady center of any group.' },
+  'DISCOVER-SUPPORT-ANALYZE-BREADTH-LISTEN-FLOW': { word:'MIRROR', desc:'You reflect people back to themselves. Your wide analytical awareness and deep listening help others see who they really are.' },
+};
+
+let choices = [];
+let currentRound = 0;
+let wordHistory = JSON.parse(localStorage.getItem('oneword-history') || '[]'); // #5 evolution
+
+// Build question screens
+function buildQuestions() {
+  questions.forEach((q, i) => {
+    const el = document.getElementById('screen-q' + (i + 1));
+    const leftSolid = Math.random() > 0.5;
+    el.innerHTML = '<div class="q-row">' +
+      '<div class="q-half" onclick="choose(\'' + q.left + '\',' + i + ')">' +
+        '<span class="q-word ' + (leftSolid ? 'q-word-solid' : 'q-word-outline') + '">' + q.left + '</span>' +
+      '</div>' +
+      '<div class="q-half" onclick="choose(\'' + q.right + '\',' + i + ')">' +
+        '<span class="q-word ' + (leftSolid ? 'q-word-outline' : 'q-word-solid') + '">' + q.right + '</span>' +
+      '</div>' +
+    '</div>';
+  });
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function choose(word, round) {
+  choices.push(word);
+  currentRound = round + 1;
+  if (currentRound < 6) {
+    showScreen('screen-q' + (currentRound + 1));
+  } else {
+    showCompression(); // #1: go to compression first
+  }
+}
+
+// -- #1: Compression Animation --
+function showCompression() {
+  const key = choices.join('-');
+  const r = resultMap[key] || { word:'SEEKER', desc:'You are on a path of discovery.' };
+  const wrap = document.getElementById('compress-wrap');
+  const resultEl = document.getElementById('compress-result');
+
+  // Clear previous
+  wrap.querySelectorAll('.compress-word').forEach(el => el.remove());
+
+  // Create scattered choice words
+  const positions = [
+    { x: -35, y: -30 }, { x: 30, y: -25 },
+    { x: -25, y: 0 },   { x: 35, y: 5 },
+    { x: -30, y: 28 },  { x: 25, y: 30 },
+  ];
+  const wordEls = choices.map((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'compress-word';
+    el.textContent = c;
+    const px = positions[i].x;
+    const py = positions[i].y;
+    el.style.transform = 'translate(' + px + 'vw, ' + py + 'vh)';
+    wrap.appendChild(el);
+    return el;
+  });
+
+  resultEl.textContent = r.word;
+  resultEl.classList.remove('visible');
+  showScreen('screen-compress');
+
+  // Phase 1: scatter in (0ms)
+  requestAnimationFrame(() => {
+    wordEls.forEach(el => el.classList.add('scattered'));
+  });
+
+  // Phase 2: converge to center (1200ms)
+  setTimeout(() => {
+    wordEls.forEach(el => {
+      el.style.transform = 'translate(0, 0)';
+      el.classList.add('converged');
+    });
+  }, 1200);
+
+  // Phase 3: reveal result word (2400ms)
+  setTimeout(() => {
+    resultEl.classList.add('visible');
+  }, 2200);
+
+  // Phase 4: transition to result screen (3600ms)
+  setTimeout(() => {
+    showResult(r);
+  }, 3400);
+}
+
+// -- Result Screen --
+function showResult(r) {
+  if (!r) {
+    const key = choices.join('-');
+    r = resultMap[key] || { word:'SEEKER', desc:'You are on a path of discovery.' };
+  }
+
+  document.getElementById('result-text').innerHTML = 'YOUR WORD IS<br>' + r.word;
+  document.getElementById('result-desc').textContent = r.desc;
+
+  // #4: Dimension reveal
+  buildDimensions();
+
+  // #5: Evolution tracker
+  wordHistory.push(r.word);
+  try { localStorage.setItem('oneword-history', JSON.stringify(wordHistory)); } catch(e) {}
+  updateEvolution();
+
+  // Close dims on new result
+  document.getElementById('dims-detail').classList.remove('open');
+
+  showScreen('screen-result');
+}
+
+// -- #4: Dimension Reveal --
+function buildDimensions() {
+  const dims = [
+    { label:'VALUES',    words: [choices[0], choices[3]] },
+    { label:'STRENGTHS', words: [choices[1], choices[4]] },
+    { label:'SKILLS',    words: [choices[2], choices[5]] },
+  ];
+  const row = document.getElementById('dims-row');
+  row.innerHTML = dims.map(d =>
+    '<div class="dims-item"><div class="dims-label">' + d.label + '</div><div class="dims-value">' + d.words.join(' + ') + '</div></div>'
+  ).join('');
+}
+
+function toggleDims() {
+  document.getElementById('dims-detail').classList.toggle('open');
+}
+
+// -- #5: Evolution Tracker --
+function updateEvolution() {
+  const el = document.getElementById('result-evolution');
+  if (wordHistory.length > 1) {
+    const prev = wordHistory.slice(0, -1);
+    const current = wordHistory[wordHistory.length - 1];
+    const unique = [...new Set(prev)];
+    if (unique.length === 1 && unique[0] === current) {
+      el.textContent = 'ALWAYS: ' + current;
+    } else {
+      el.textContent = unique.join(', ') + ' \u2192 ' + current;
+    }
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// -- #2: Share Card --
+function shareCard() {
+  const canvas = document.getElementById('share-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = 1080, h = 1080;
+  canvas.width = w;
+  canvas.height = h;
+
+  // Background
+  ctx.fillStyle = '#F4F5F0';
+  ctx.fillRect(0, 0, w, h);
+
+  // Accent elements
+  ctx.fillStyle = '#6B7C5E';
+
+  // "YOUR WORD IS" label
+  ctx.font = '700 28px system-ui, -apple-system, sans-serif';
+  ctx.letterSpacing = '4px';
+  ctx.textAlign = 'center';
+  ctx.fillText('YOUR WORD IS', w/2, 340);
+
+  // The word
+  const key = choices.join('-');
+  const r = resultMap[key] || { word:'SEEKER', desc:'' };
+  ctx.font = '900 120px system-ui, -apple-system, sans-serif';
+  ctx.fillText(r.word, w/2, 500);
+
+  // Description
+  ctx.font = '400 26px system-ui, -apple-system, sans-serif';
+  ctx.globalAlpha = 0.5;
+  const words = r.desc.split(' ');
+  let lines = [], line = '';
+  words.forEach(word => {
+    const test = line + (line ? ' ' : '') + word;
+    if (ctx.measureText(test).width > w - 200) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  });
+  if (line) lines.push(line);
+  lines.forEach((l, i) => {
+    ctx.fillText(l, w/2, 580 + i * 38);
+  });
+
+  // Footer
+  ctx.globalAlpha = 0.25;
+  ctx.font = '700 18px system-ui, -apple-system, sans-serif';
+  ctx.fillText('ONEWORD \u00B7 NARRATIVE BY DESIGN', w/2, h - 80);
+  ctx.globalAlpha = 1;
+
+  // Download or share
+  canvas.toBlob(blob => {
+    if (navigator.share && navigator.canShare) {
+      const file = new File([blob], 'oneword-' + r.word.toLowerCase() + '.png', { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'My OneWord: ' + r.word });
+        return;
+      }
+    }
+    // Fallback: download
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'oneword-' + r.word.toLowerCase() + '.png';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    // Toast
+    const toast = document.getElementById('share-toast');
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 2000);
+  }, 'image/png');
+}
+
+function resetGame() {
+  choices = [];
+  currentRound = 0;
+  buildQuestions();
+  showScreen('screen-q1');
+}
+
+// Marquee
+(function initMarquee() {
+  const items = ["WHAT'S YOUR ONE WORD?", 'ONEWORD', 'NARRATIVE BY DESIGN', "WHAT'S YOUR ONE WORD?", 'ONEWORD', 'NARRATIVE BY DESIGN'];
+  const track = document.getElementById('marquee-track');
+  const html = items.map(t => '<span>' + t + '</span>').join('');
+  track.innerHTML = html + html;
+})();
+
+// Init
+buildQuestions();
+</script>
+</body>
+</html>
