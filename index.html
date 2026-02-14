@@ -27,9 +27,9 @@ html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;
 .q-half:active{background:rgba(107,124,94,0.08)}
 .q-word{font-size:clamp(42px,8vw,110px);font-weight:900;letter-spacing:-0.02em;user-select:none;transition:all 0.4s cubic-bezier(.4,0,.2,1)}
 .q-word-solid{color:var(--accent)}
-/* FIX: outline text using paint-order to prevent inner line artifacts */
+/* Outline text: fill with bg color to cover inner stroke lines */
 .q-word-outline{
-  color:transparent;
+  color:var(--bg);
   -webkit-text-stroke:2px var(--accent);
   paint-order:stroke fill;
 }
@@ -55,16 +55,16 @@ html,body{height:100%;font-family:'Circular',system-ui,-apple-system,sans-serif;
 .compress-result.visible{opacity:1;transform:scale(1)}
 
 /* ── Result ── */
-.result-inner{text-align:center;max-width:640px;padding:0 40px;margin-top:-20px}
+.result-inner{text-align:center;width:100%;padding:0 24px;margin-top:-20px}
 .result-label{font-size:clamp(10px,1.2vw,13px);font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);opacity:0;margin-bottom:8px;min-height:1.2em;transition:opacity 0.5s}
 .result-label.visible{opacity:0.35}
 .result-label .cursor{display:inline-block;width:2px;height:0.85em;background:var(--accent);opacity:0.4;margin-left:1px;animation:blink 0.7s step-end infinite;vertical-align:baseline;position:relative;top:0.08em}
-.result-word{color:var(--accent);font-weight:900;font-size:clamp(48px,9vw,120px);line-height:1.1;letter-spacing:-0.02em;min-height:1.2em;opacity:0;transition:opacity 0.3s}
+.result-word{color:var(--accent);font-weight:900;font-size:clamp(48px,9vw,120px);line-height:1.1;min-height:1.2em;opacity:0;transition:opacity 0.3s}
 .result-word.visible{opacity:1}
 /* Typing cursor blink */
 .result-word .cursor{display:inline-block;width:3px;height:0.85em;background:var(--accent);opacity:0.6;margin-left:2px;animation:blink 0.7s step-end infinite;vertical-align:baseline;position:relative;top:0.05em}
 @keyframes blink{0%,100%{opacity:0.6}50%{opacity:0}}
-.result-desc{font-size:clamp(14px,1.8vw,18px);font-weight:400;line-height:1.7;margin-top:24px;color:var(--accent);opacity:0;transition:opacity 0.8s}
+.result-desc{font-size:clamp(14px,1.8vw,18px);font-weight:400;line-height:1.7;margin-top:24px;color:var(--accent);opacity:0;transition:opacity 0.8s;max-width:560px;margin-left:auto;margin-right:auto}
 .result-desc.visible{opacity:0.6}
 
 /* ── Reflective prompt (#3) ── */
@@ -266,7 +266,6 @@ function showScreen(id) {
 }
 
 function choose(word, round, side) {
-  // Imprint animation: stamp the chosen side
   const leftEl = document.getElementById('q' + round + '-left');
   const rightEl = document.getElementById('q' + round + '-right');
   const chosen = side === 'left' ? leftEl : rightEl;
@@ -275,20 +274,20 @@ function choose(word, round, side) {
   chosen.classList.add('chosen');
   unchosen.classList.add('unchosen');
 
-  // Update round indicator
   const roundEl = document.getElementById('q-round');
 
   choices.push(word);
   currentRound = round + 1;
 
-  // Delay transition to let imprint animate
   setTimeout(() => {
     if (currentRound < 6) {
       roundEl.textContent = (currentRound + 1) + ' / 6';
       showScreen('screen-q' + (currentRound + 1));
     } else {
       roundEl.style.opacity = '0';
-      showCompression();
+      const key = choices.join('-');
+      const r = resultMap[key] || { word:'SEEKER', desc:'You are on a path of discovery.' };
+      showResult(r);
     }
   }, 450);
 }
@@ -355,11 +354,9 @@ function showResult(r) {
   const actionsEl = document.getElementById('result-actions');
   const roundEl = document.getElementById('q-round');
 
-  // Hide round counter
   roundEl.style.opacity = '0';
   roundEl.style.pointerEvents = 'none';
 
-  // Reset everything
   labelEl.innerHTML = '';
   labelEl.classList.remove('visible');
   wordEl.innerHTML = '';
@@ -379,17 +376,15 @@ function showResult(r) {
   document.getElementById('dims-detail').classList.remove('open');
   showScreen('screen-result');
 
-  // ── Phase 1: Type "YOUR WORD IS" ──
   const labelText = 'YOUR WORD IS';
   const labelLetters = labelText.split('');
   let labelTyped = '';
   const labelDelay = 55;
 
-  // Show label container
   labelEl.classList.add('visible');
   labelEl.innerHTML = '<span class="cursor"></span>';
 
-  let t = 300; // initial pause
+  let t = 300;
 
   labelLetters.forEach((ch, i) => {
     setTimeout(() => {
@@ -398,13 +393,10 @@ function showResult(r) {
     }, t + i * labelDelay);
   });
 
-  // ── Phase 2: Type the keyword ──
   const phase2Start = t + labelLetters.length * labelDelay + 400;
 
   setTimeout(() => {
-    // Remove cursor from label
     labelEl.textContent = labelText;
-    // Show word line
     wordEl.classList.add('visible');
     wordEl.innerHTML = '<span class="cursor"></span>';
   }, phase2Start);
@@ -418,9 +410,7 @@ function showResult(r) {
       wordTyped += ch;
       wordEl.innerHTML = wordTyped + '<span class="cursor"></span>';
 
-      // After last letter of keyword
       if (i === wordLetters.length - 1) {
-        // Remove cursor, fade in rest
         setTimeout(() => {
           wordEl.innerHTML = wordTyped;
           descEl.classList.add('visible');
@@ -437,7 +427,6 @@ function showResult(r) {
   });
 }
 
-// ── #4: Dimension Reveal ──
 function buildDimensions() {
   const dims = [
     { label:'VALUES',    words: [choices[0], choices[3]] },
@@ -454,7 +443,6 @@ function toggleDims() {
   document.getElementById('dims-detail').classList.toggle('open');
 }
 
-// ── #5: Evolution Tracker ──
 function updateEvolution() {
   const el = document.getElementById('result-evolution');
   if (wordHistory.length > 1) {
@@ -472,7 +460,6 @@ function updateEvolution() {
   }
 }
 
-// ── #2: Share Card ──
 function shareCard() {
   const canvas = document.getElementById('share-canvas');
   const ctx = canvas.getContext('2d');
@@ -545,7 +532,6 @@ function resetGame() {
   showScreen('screen-q1');
 }
 
-// Marquee
 (function initMarquee() {
   const items = ["WHAT'S YOUR ONE WORD?", 'ONEWORD', 'NARRATIVE BY DESIGN', "WHAT'S YOUR ONE WORD?", 'ONEWORD', 'NARRATIVE BY DESIGN'];
   const track = document.getElementById('marquee-track');
